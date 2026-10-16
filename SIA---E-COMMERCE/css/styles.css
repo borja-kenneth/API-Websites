@@ -1,0 +1,67 @@
+/* GLOBAL STYLES */
+body {
+  font-family: Inter, sans-serif;
+  background: #f3f4f6;
+  color: #1f2937;
+}
+.c {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px #0000000d;
+}
+.b {
+  background: #2563eb;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+}
+.b:hover {
+  background: #1d4ed8;
+}
+.g {
+  border: 1px solid #d1d5db;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  background: #fff;
+}
+.g:hover {
+  background: #f3f4f6;
+}
+.i {
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+  background: #fff;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #6b7280;
+  background: #f9fafb;
+}
+td {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+@media print {
+  header,
+  #nav,
+  #side,
+  .np {
+    display: none !important;
+  }
+}
