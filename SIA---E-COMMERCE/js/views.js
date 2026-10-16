@@ -435,9 +435,13 @@ R["s-dash"] = () => {
     bp = {},
     bs = {};
   ok.forEach((o) =>
-    o.items.forEach(
-      (i) => (bp[P(i.productId).name] = (bp[P(i.productId).name] || 0) + i.qty),
-    ),
+    o.items.forEach((i) => {
+      const product = P(i.productId);
+      // Connected SaleSync catalogs replace the sample products, so old demo
+      // orders can refer to products that are no longer in the active catalog.
+      if (product)
+        bp[product.name] = (bp[product.name] || 0) + i.qty;
+    }),
   );
   os.forEach((o) => (bs[o.status] = (bs[o.status] || 0) + 1));
   return (
@@ -797,11 +801,13 @@ R["a-dash"] = () => {
     bc = {};
   os.forEach((o) => (bs[o.status] = (bs[o.status] || 0) + 1));
   os.filter((o) => okO(o)).forEach((o) =>
-    o.items.forEach(
-      (i) =>
-        (bc[P(i.productId).category] =
-          (bc[P(i.productId).category] || 0) + i.price * i.qty),
-    ),
+    o.items.forEach((i) => {
+      const product = P(i.productId);
+      // Ignore sample order lines whose products aren't in the SaleSync catalog.
+      if (product)
+        bc[product.category] =
+          (bc[product.category] || 0) + i.price * i.qty;
+    }),
   );
   return (
     h("Platform Dashboard") +
