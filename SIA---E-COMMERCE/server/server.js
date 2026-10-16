@@ -244,6 +244,9 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/catalog") {
       return send(res, 200, await database.catalog());
     }
+    if (req.method === "GET" && url.pathname === "/api/integration/status") {
+      return send(res, 200, { salesyncConfigured: database.usesSaleSync() });
+    }
     if (req.method === "POST" && url.pathname === "/api/demo/orders") {
       const out = await database.createDemoOrders(
         JSON.parse((await readRaw(req)) || "{}"),
@@ -255,6 +258,13 @@ const server = http.createServer(async (req, res) => {
     );
     if (req.method === "POST" && demoCancel) {
       const out = await database.cancelDemoOrder(demoCancel[1]);
+      return send(res, 200, out);
+    }
+    const demoComplete = url.pathname.match(
+      /^\/api\/demo\/orders\/(ORD-\d{4,})\/complete$/,
+    );
+    if (req.method === "POST" && demoComplete) {
+      const out = await database.completeDemoOrder(demoComplete[1]);
       return send(res, 200, out);
     }
     if (req.method === "POST" && url.pathname === "/api/checkout") {
@@ -293,7 +303,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 if (require.main === module)
-  server.listen(PORT, () =>
+  server.listen(PORT, "0.0.0.0", () =>
     console.log(
       "ShopHub site and API on :" +
         PORT +

@@ -1,6 +1,7 @@
 "use strict";
 
 const mysql = require("mysql2/promise");
+const salesync = require("./api/salesync");
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || "127.0.0.1",
@@ -14,11 +15,13 @@ const pool = mysql.createPool({
 });
 
 async function health() {
+  if (salesync.isConfigured()) return salesync.health();
   await pool.query("SELECT 1");
   return { ok: true, database: process.env.DB_NAME || "shophub" };
 }
 
 async function catalog() {
+  if (salesync.isConfigured()) return salesync.catalog();
   const [products] = await pool.query(`
     SELECT product_id, seller_id, category_id, sku, name, description,
            price, original_price, stock, image, status, rating_avg,
@@ -37,6 +40,7 @@ function badRequest(message) {
 }
 
 async function createDemoOrders(input) {
+  if (salesync.isConfigured()) return salesync.placeOrders(input);
   if (process.env.ENABLE_DEMO_ORDERS !== "true") {
     throw Object.assign(new Error("Demo orders are disabled."), {
       status: 403,
@@ -248,6 +252,7 @@ async function createDemoOrders(input) {
 }
 
 async function cancelDemoOrder(orderNumber) {
+  if (salesync.isConfigured()) return salesync.cancelOrder(orderNumber);
   if (process.env.ENABLE_DEMO_ORDERS !== "true") {
     throw Object.assign(new Error("Demo orders are disabled."), {
       status: 403,
@@ -319,4 +324,21 @@ async function cancelDemoOrder(orderNumber) {
   }
 }
 
-module.exports = { health, catalog, createDemoOrders, cancelDemoOrder, pool };
+async function completeDemoOrder(orderNumber) {
+  if (!salesync.isConfigured()) {
+    throw Object.assign(new Error("SaleSync is not configured."), {
+      status: 503,
+    });
+  }
+  return salesync.completeOrder(orderNumber);
+}
+
+module.exports = {
+  health,
+  catalog,
+  createDemoOrders,
+  cancelDemoOrder,
+  completeDemoOrder,
+  usesSaleSync: salesync.isConfigured,
+  pool,
+};

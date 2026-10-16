@@ -1,7 +1,14 @@
 /* DATABASE DEMO CONNECTION */
 let databaseConnected = false;
+let salesyncConfigured = false;
 async function connectDatabaseCatalog() {
   try {
+    const modeResponse = await fetch("/api/integration/status");
+    if (modeResponse.ok) {
+      const mode = await modeResponse.json();
+      salesyncConfigured = Boolean(mode.salesyncConfigured);
+      if (salesyncConfigured) databaseConnected = true;
+    }
     const response = await fetch("/api/catalog");
     if (!response.ok)
       throw new Error("Catalog API returned " + response.status);
@@ -44,6 +51,8 @@ async function connectDatabaseCatalog() {
         img: row.image || "📦",
         sellerId,
         sellerName: row.seller_name,
+        salesyncProductId:
+          row.source === "salesync" ? Number(row.product_id) : null,
         sku,
         status: row.status,
         desc: row.description || "",
@@ -54,8 +63,14 @@ async function connectDatabaseCatalog() {
     databaseConnected = true;
     return true;
   } catch (error) {
+    if (salesyncConfigured) {
+      mockDB.products = [];
+      databaseConnected = true;
+    }
     console.warn(
-      "ShopHub database catalog is unavailable; using the browser demo catalog.",
+      salesyncConfigured
+        ? "SaleSync catalog is unavailable; ShopHub will not place orders."
+        : "ShopHub database catalog is unavailable; using the browser demo catalog.",
       error.message,
     );
     return false;
@@ -648,6 +663,12 @@ const app = {
   },
   placeOrder() {
     if (this.placing || !this.cart.length) return;
+    if (salesyncConfigured && !mockDB.products.length) {
+      return this.toast(
+        "ShopHub cannot reach SaleSync right now. No order was placed.",
+        "error",
+      );
+    }
     const a = this.addr,
       miss = [
         "name",
@@ -821,6 +842,7 @@ const app = {
             groups: T.groups.map((g) => ({
               orderNumber: orderRefs.get(g.sellerId),
               items: g.items.map((i) => ({
+                productId: P(i.productId).salesyncProductId,
                 sku: P(i.productId).sku,
                 quantity: i.qty,
               })),
@@ -1005,7 +1027,7 @@ const app = {
       "Keep Order",
     );
   },
-  async cancelConnectedOrder(id) {
+  async cancelConnectedOrder(id, finalStatus = "Cancelled") {
     try {
       const response = await fetch(
         "/api/demo/orders/" + encodeURIComponent(id) + "/cancel",
@@ -1015,7 +1037,8 @@ const app = {
       if (!response.ok)
         throw new Error(result.error || "Could not cancel the database order.");
       const order = mockDB.orders.find((item) => item.id === id);
-      this.setStatus(id, "Cancelled");
+      this.setStatus(id, finalStatus);
+      if (salesyncConfigured) await connectDatabaseCatalog();
       this.notify(
         order.sellerId,
         "Order cancelled",
@@ -1140,8 +1163,31 @@ const app = {
     const o = mockDB.orders.find((x) => x.id === id),
       n = ST[ST.indexOf(o.status) + 1];
     if (!n || n === "Cancelled") return;
+    if (n === "Completed" && salesyncConfigured)
+      return this.completeConnectedOrder(id);
     this.setStatus(id, n);
     this.refresh();
+  },
+  async completeConnectedOrder(id, options = {}) {
+    try {
+      const response = await fetch(
+        "/api/demo/orders/" + encodeURIComponent(id) + "/complete",
+        { method: "POST" },
+      );
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(
+          result.error || "SaleSync could not complete this order.",
+        );
+      this.setStatus(id, "Completed", options);
+      await connectDatabaseCatalog();
+      this.refresh();
+    } catch (error) {
+      this.toast(
+        error.message || "Could not record the completed sale in SaleSync.",
+        "error",
+      );
+    }
   },
   failDelivery(id, why) {
     const o = mockDB.orders.find((x) => x.id === id);
@@ -1156,7 +1202,8 @@ const app = {
         String(o.shp.attempts),
       );
     if (o.shp.attempts >= MAX_ATTEMPTS) {
-      this.setStatus(id, "Returned");
+      if (salesyncConfigured) this.cancelConnectedOrder(id, "Returned");
+      else this.setStatus(id, "Returned");
       this.notify(
         o.sellerId,
         "Parcel returned",
@@ -1469,6 +1516,10 @@ const app = {
     if (!ok || !ok.includes(o.status))
       return this.toast("That status change is not allowed.", "error");
     const go = () => {
+      if (st === "Cancelled" && databaseConnected) {
+        this.cancelConnectedOrder(id);
+        return;
+      }
       this.setStatus(id, st);
       this.refresh();
     };
@@ -1527,8 +1578,12 @@ const app = {
           this.toast("Enter who received the parcel", "error");
           return false;
         }
-        this.setStatus(id, "Completed", { by: esc(v.by.trim()) });
-        this.refresh();
+        if (salesyncConfigured) {
+          this.completeConnectedOrder(id, { by: esc(v.by.trim()) });
+        } else {
+          this.setStatus(id, "Completed", { by: esc(v.by.trim()) });
+          this.refresh();
+        }
       },
       o.pay === "Cash on Delivery"
         ? "Delivered & cash collected"
