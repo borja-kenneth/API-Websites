@@ -51,8 +51,9 @@ async function catalog() {
     products: (data.products || []).map((product) => ({
       source: "salesync",
       product_id: Number(product.product_id),
-      seller_id: "salesync-store",
-      seller_name: data.storeName || "SaleSync Store",
+      seller_id: String(product.seller_id || "salesync-store"),
+      seller_email: product.seller_email || null,
+      seller_name: product.seller_name || data.storeName || "SaleSync Store",
       category_id: Number(product.category_id),
       category_name: product.category_name,
       sku: product.sku,
@@ -75,6 +76,10 @@ async function catalog() {
 
 async function health() {
   return request("health");
+}
+
+function createProduct(input) {
+  return request("products", "POST", input);
 }
 
 function placeOrders(input) {
@@ -101,6 +106,7 @@ module.exports = {
   isConfigured,
   health,
   catalog,
+  createProduct,
   placeOrders,
   completeOrder,
   cancelOrder,

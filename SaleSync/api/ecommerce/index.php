@@ -227,17 +227,73 @@ try {
         reply(['ok'=>true,'database'=>'salesync']);
     }
     if ($method === 'GET' && $route === 'catalog') {
-        $products = rows($pdo, "SELECT p.product_id,p.product_name,p.barcode,p.category_id,c.category_name,p.cost_price,p.selling_price,
-            i.quantity_on_hand,i.quantity_reserved,(i.quantity_on_hand-i.quantity_reserved) AS available_quantity,p.reorder_point
+        $products = rows($pdo, "SELECT p.product_id,p.product_name,p.barcode,p.category_id,c.category_name,p.selling_price,
+            i.quantity_on_hand,i.quantity_reserved,(i.quantity_on_hand-i.quantity_reserved) AS available_quantity,
+            epm.seller_id,epm.seller_email,epm.seller_name,epm.original_price,epm.image,epm.description
             FROM products p JOIN categories c ON c.category_id=p.category_id JOIN inventory i ON i.product_id=p.product_id
+            LEFT JOIN ecommerce_product_metadata epm ON epm.product_id=p.product_id
             WHERE p.is_active=TRUE ORDER BY p.product_id");
         $categories = rows($pdo, 'SELECT category_id,category_name FROM categories WHERE is_active=TRUE ORDER BY category_name');
         $settings = one($pdo, 'SELECT store_name FROM system_settings WHERE settings_id=1');
         reply(['ok'=>true,'storeName'=>$settings['store_name'] ?? 'SaleSync Store',
             'products'=>array_map(static fn($p)=>['product_id'=>(int)$p['product_id'],'name'=>$p['product_name'],'sku'=>(string)($p['barcode'] ?: $p['product_id']),
-                'category_id'=>(int)$p['category_id'],'category_name'=>$p['category_name'],'price'=>(float)$p['selling_price'],'original_price'=>(float)$p['selling_price'],
-                'stock'=>(int)$p['available_quantity'],'image'=>'📦','rating_avg'=>0,'review_count'=>0,'description'=>'Available from the SaleSync store.'], $products),
+                'category_id'=>(int)$p['category_id'],'category_name'=>$p['category_name'],'price'=>(float)$p['selling_price'],
+                'original_price'=>(float)($p['original_price'] ?? $p['selling_price']),
+                'seller_id'=>$p['seller_id'] ?? 'salesync-store','seller_email'=>$p['seller_email'] ?? null,
+                'seller_name'=>$p['seller_name'] ?? ($settings['store_name'] ?? 'SaleSync Store'),
+                'stock'=>(int)$p['available_quantity'],'image'=>($p['image'] ?: '📦'),'rating_avg'=>0,'review_count'=>0,'description'=>($p['description'] ?? 'Available from the SaleSync store.')], $products),
             'categories'=>array_map(static fn($c)=>['id'=>(int)$c['category_id'],'name'=>$c['category_name']],$categories)]);
+    }
+    if ($method === 'POST' && $route === 'products') {
+        $input = requestBody();
+        $product = $input['product'] ?? [];
+        $seller = $input['seller'] ?? [];
+        $name = trim((string)($product['name'] ?? ''));
+        $barcode = strtoupper(trim((string)($product['sku'] ?? '')));
+        $categoryName = trim((string)($product['category'] ?? ''));
+        $price = money($product['price'] ?? null, 'price');
+        $originalPrice = money($product['originalPrice'] ?? $price, 'original price');
+        $stock = filter_var($product['stock'] ?? null, FILTER_VALIDATE_INT);
+        $sellerId = trim((string)($seller['id'] ?? ''));
+        $sellerEmail = strtolower(trim((string)($seller['email'] ?? '')));
+        $sellerName = trim((string)($seller['storeName'] ?? ''));
+        $image = trim((string)($product['image'] ?? '📦'));
+        $description = trim((string)($product['description'] ?? ''));
+
+        if ($name === '' || mb_strlen($name) > 150) fail('Product name is required and must be 150 characters or fewer.');
+        if ($barcode === '' || mb_strlen($barcode) > 64 || !preg_match('/^[A-Z0-9 .\/\$+%-]+$/D', $barcode)) {
+            fail('Barcode must use A-Z, 0-9, spaces, and - . $ / + % only.');
+        }
+        if ($price <= 0) fail('Product price must be greater than zero.');
+        if ($stock === false || $stock < 0) fail('Stock must be a whole number of zero or more.');
+        if ($sellerId === '' || $sellerName === '' || !filter_var($sellerEmail, FILTER_VALIDATE_EMAIL)) fail('Seller information is invalid.');
+        if (mb_strlen($sellerName) > 150 || mb_strlen($sellerEmail) > 150 || mb_strlen($image) > 255) fail('Seller or image information is too long.');
+        if (one($pdo, 'SELECT product_id FROM products WHERE barcode=?', [$barcode])) fail('That barcode is already assigned to another product.', 409);
+        $category = one($pdo, 'SELECT category_id FROM categories WHERE category_name=? AND is_active=TRUE', [$categoryName]);
+        if (!$category) fail('Choose an active SaleSync category.');
+
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('INSERT INTO products (product_name,barcode,category_id,cost_price,selling_price,reorder_point) VALUES (?,?,?,0,?,10)');
+            $stmt->execute([$name,$barcode,(int)$category['category_id'],$price]);
+            $productId = (int)$pdo->lastInsertId();
+            execSql($pdo, 'INSERT INTO inventory (product_id,quantity_on_hand,quantity_reserved) VALUES (?,?,0)', [$productId,$stock]);
+            if ($stock > 0) {
+                execSql($pdo, "INSERT INTO inventory_movements
+                    (product_id,movement_type,quantity_change,quantity_before,quantity_after,reference_type,reference_id,reason)
+                    VALUES (?,'RESTOCK',?,0,?,'SHOPHUB_PRODUCT',?,'Opening stock from ShopHub')",
+                    [$productId,$stock,$stock,(string)$productId]);
+            }
+            execSql($pdo, 'INSERT INTO ecommerce_product_metadata (product_id,seller_id,seller_email,seller_name,original_price,image,description) VALUES (?,?,?,?,?,?,?)',
+                [$productId,$sellerId,$sellerEmail,$sellerName,max($price,$originalPrice),$image ?: '📦',$description]);
+            execSql($pdo, "INSERT INTO audit_logs (action,entity_type,entity_id,new_value) VALUES ('SHOPHUB_CREATE_PRODUCT','PRODUCT',?,?)",
+                [(string)$productId,json_encode(['name'=>$name,'seller'=>$sellerEmail,'sku'=>$barcode],JSON_UNESCAPED_UNICODE)]);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+        reply(['ok'=>true,'productId'=>$productId,'sku'=>$barcode],201);
     }
     if ($method === 'POST' && $route === 'orders') reply(recordOrder($pdo, requestBody()), 201);
     if ($method === 'POST' && preg_match('~^orders/(ORD-\d{4,})/(complete|cancel)$~D', $route, $match)) {

@@ -35,3 +35,20 @@ CREATE TABLE IF NOT EXISTS ecommerce_order_items (
         FOREIGN KEY (product_id) REFERENCES products(product_id)
         ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
+
+-- ShopHub-created products still use SaleSync's products and inventory tables.
+-- This small link table keeps the ShopHub seller and display-only fields that
+-- SaleSync's POS product table does not have.
+CREATE TABLE IF NOT EXISTS ecommerce_product_metadata (
+    product_id INT UNSIGNED PRIMARY KEY,
+    seller_id VARCHAR(100) NOT NULL,
+    seller_email VARCHAR(150) NOT NULL,
+    seller_name VARCHAR(150) NOT NULL,
+    original_price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    image VARCHAR(255) NOT NULL DEFAULT '📦',
+    description TEXT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ecommerce_product_metadata_product
+        FOREIGN KEY (product_id) REFERENCES products(product_id)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

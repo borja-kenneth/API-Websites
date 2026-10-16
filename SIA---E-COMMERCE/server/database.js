@@ -35,6 +35,16 @@ async function catalog() {
   return { products, categories };
 }
 
+async function createProduct(input) {
+  if (!salesync.isConfigured()) {
+    throw Object.assign(
+      new Error("Product creation requires the SaleSync connection."),
+      { status: 503 },
+    );
+  }
+  return salesync.createProduct(input);
+}
+
 function badRequest(message) {
   return Object.assign(new Error(message), { status: 400 });
 }
@@ -336,6 +346,7 @@ async function completeDemoOrder(orderNumber) {
 module.exports = {
   health,
   catalog,
+  createProduct,
   createDemoOrders,
   cancelDemoOrder,
   completeDemoOrder,

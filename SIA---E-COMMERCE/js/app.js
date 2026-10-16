@@ -20,7 +20,11 @@ async function connectDatabaseCatalog() {
       if (!sellerId) {
         let seller = mockDB.users.find(
           (user) =>
-            user.role === "seller" && user.storeName === row.seller_name,
+            user.role === "seller" &&
+            (String(user.id) === String(row.seller_id) ||
+              (row.seller_email &&
+                user.email.toLowerCase() === row.seller_email.toLowerCase()) ||
+              user.storeName === row.seller_name),
         );
         if (!seller) {
           seller = {
@@ -1386,6 +1390,10 @@ const app = {
           img: "📦",
           desc: "",
         };
+    if (salesyncConfigured && id && p.salesyncProductId) {
+      this.toast("Edit this POS-connected product in SaleSync for now.", "error");
+      return;
+    }
     this.form(
       id ? "Edit Product" : "Add Product",
       [
@@ -1408,9 +1416,14 @@ const app = {
           );
           return false;
         }
-        if (!/^[A-Za-z0-9._-]{2,30}$/.test(v.sku.trim())) {
+        const validSku = salesyncConfigured
+          ? /^[A-Za-z0-9 .\/$+%-]{2,64}$/.test(v.sku.trim())
+          : /^[A-Za-z0-9._-]{2,30}$/.test(v.sku.trim());
+        if (!validSku) {
           this.toast(
-            "SKU: 2-30 characters, letters, numbers, dot, dash or underscore only",
+            salesyncConfigured
+              ? "Barcode: use A-Z, 0-9, spaces, and - . $ / + % only (up to 64 characters)."
+              : "SKU: 2-30 characters, letters, numbers, dot, dash or underscore only",
             "error",
           );
           return false;
@@ -1432,6 +1445,26 @@ const app = {
             img: v.img || "📦",
             desc: esc(v.desc),
           };
+        if (salesyncConfigured && !id) {
+          this.saveConnectedProduct({
+            product: {
+              name: v.name.trim(),
+              sku: v.sku.trim(),
+              category: v.category,
+              price,
+              originalPrice: Math.max(price, +v.orig || price),
+              stock,
+              image: v.img || "📦",
+              description: v.desc.trim(),
+            },
+            seller: {
+              id: u.id,
+              email: u.email,
+              storeName: u.storeName,
+            },
+          });
+          return false;
+        }
         if (id) {
           this.audit("Edited Product", p.name, fmt(p.price), fmt(price));
           Object.assign(p, d);
@@ -1454,8 +1487,33 @@ const app = {
       },
     );
   },
+  async saveConnectedProduct(input) {
+    const saveButton = $("mo");
+    if (saveButton) saveButton.disabled = true;
+    try {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(result.error || "SaleSync could not save the product.");
+      await connectDatabaseCatalog();
+      this.audit("Added POS Product", input.product.name);
+      this.closeModal();
+      this.toast("Product saved to SaleSync and ShopHub", "success");
+      this.refresh();
+    } catch (error) {
+      this.toast(error.message || "Could not save the product to SaleSync.", "error");
+    } finally {
+      if (saveButton) saveButton.disabled = false;
+    }
+  },
   archive(id) {
     const p = P(id);
+    if (salesyncConfigured && p.salesyncProductId)
+      return this.toast("Archive this POS-connected product in SaleSync for now.", "error");
     if (this.currentUser.status !== "Active")
       return this.toast("Awaiting approval: cannot publish", "error");
     p.status = p.status === "Archived" ? "Active" : "Archived";
@@ -1463,6 +1521,9 @@ const app = {
     this.refresh();
   },
   delProduct(id) {
+    const product = P(id);
+    if (salesyncConfigured && product.salesyncProductId)
+      return this.toast("Delete this POS-connected product in SaleSync for now.", "error");
     this.confirm(
       "Are you sure you want to delete this product?",
       () => {

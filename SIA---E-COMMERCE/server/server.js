@@ -247,6 +247,12 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/integration/status") {
       return send(res, 200, { salesyncConfigured: database.usesSaleSync() });
     }
+    if (req.method === "POST" && url.pathname === "/api/products") {
+      const out = await database.createProduct(
+        JSON.parse((await readRaw(req)) || "{}"),
+      );
+      return send(res, 201, out);
+    }
     if (req.method === "POST" && url.pathname === "/api/demo/orders") {
       const out = await database.createDemoOrders(
         JSON.parse((await readRaw(req)) || "{}"),
