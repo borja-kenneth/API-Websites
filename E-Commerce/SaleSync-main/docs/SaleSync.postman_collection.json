@@ -1,0 +1,439 @@
+{
+  "info": {
+    "name": "SaleSync localhost API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Import this collection; set baseOrigin to the actual server origin. Fill email/password locally; no credentials are supplied. Cookies are managed by Postman. Run requests individually, not as an unattended collection: order/refund/return requests mutate data. Use /openapi.json for the full contract. Payments/refunds and courier tracking default to local simulations."
+  },
+  "variable": [
+    {
+      "key": "baseOrigin",
+      "value": "http://127.0.0.1:3000",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "csrfToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "p1",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shipmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "returnId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "voucherCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "checkoutKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refundKey",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Sign in (set email/password variables first)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{baseOrigin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseOrigin}}/api/v1/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) pm.collectionVariables.set('csrfToken', pm.response.json().csrfToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Current session",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{baseOrigin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseOrigin}}/api/v1/auth/session"
+      }
+    },
+    {
+      "name": "Product page",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{baseOrigin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseOrigin}}/api/v1/products?page=1&limit=12"
+      }
+    },
+    {
+      "name": "Owned order page",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{baseOrigin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseOrigin}}/api/v1/orders?page=1&limit=20"
+      }
+    },
+    {
+      "name": "Preview cart/voucher",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{baseOrigin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseOrigin}}/api/v1/orders/quote",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [\n    {\n      \"id\": \"{{productId}}\",\n      \"qty\": 1\n    }\n  ],\n  \"delivery\": {\n    \"name\": \"Your name\",\n    \"phone\": \"09123456789\",\n    \"address\": \"123 Test Street\",\n    \"barangay\": \"Your barangay\",\n    \"city\": \"Pasig\",\n    \"province\": \"Metro Manila\",\n    \"postal\": \"1609\"\n  },\n  \"voucherCode\": \"{{voucherCode}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Create order (set a new checkoutKey once per attempt)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{baseOrigin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{checkoutKey}}"
+          }
+        ],
+        "url": "{{baseOrigin}}/api/v1/orders",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [\n    {\n      \"id\": \"{{productId}}\",\n      \"qty\": 1\n    }\n  ],\n  \"delivery\": {\n    \"name\": \"Your name\",\n    \"phone\": \"09123456789\",\n    \"address\": \"123 Test Street\",\n    \"barangay\": \"Your barangay\",\n    \"city\": \"Pasig\",\n    \"province\": \"Metro Manila\",\n    \"postal\": \"1609\"\n  },\n  \"voucherCode\": \"{{voucherCode}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Review product",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{baseOrigin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseOrigin}}/api/v1/products/{{productId}}/reviews",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rating\": 5,\n  \"body\": \"Describe your delivered purchase here.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Request partial return",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{baseOrigin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseOrigin}}/api/v1/orders/{{orderId}}/returns",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Describe why these units need to be returned.\",\n  \"items\": [\n    {\n      \"id\": \"{{productId}}\",\n      \"qty\": 1\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Management: partial local test refund (set refundKey)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{baseOrigin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{refundKey}}"
+          }
+        ],
+        "url": "{{baseOrigin}}/api/v1/admin/orders/{{orderId}}/refund",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"revision\": 1,\n  \"reason\": \"Returned units received and checked\",\n  \"restock\": true,\n  \"items\": [\n    {\n      \"id\": \"{{productId}}\",\n      \"qty\": 1\n    }\n  ],\n  \"returnId\": \"{{returnId}}\",\n  \"refundShipping\": false\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Management: create voucher",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{baseOrigin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseOrigin}}/api/v1/admin/promotions",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"LOCAL10\",\n  \"name\": \"Local ten percent\",\n  \"type\": \"percent\",\n  \"value\": 10,\n  \"active\": true,\n  \"automatic\": false,\n  \"perCustomerLimit\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Management: register local courier tracking",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{baseOrigin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseOrigin}}/api/v1/admin/shipments/{{shipmentId}}/tracking",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"revision\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Management: refresh/advance tracking",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{baseOrigin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseOrigin}}/api/v1/admin/shipments/{{shipmentId}}/tracking/sync",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Management: order email queue",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "{{baseOrigin}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseOrigin}}/api/v1/admin/email-outbox?page=1&limit=20"
+      }
+    }
+  ]
+}

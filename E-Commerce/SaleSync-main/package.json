@@ -1,0 +1,26 @@
+{
+  "name": "salesync-online",
+  "private": true,
+  "version": "6.0.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env backend/start.cjs",
+    "demo": "node scripts/launch.cjs demo",
+    "presentation": "node scripts/launch.cjs presentation",
+    "catalog:import": "node scripts/import-seller-catalog.cjs",
+    "catalog:demo": "node scripts/local-seller-catalog.cjs",
+    "test:catalog-import": "node --test tests/catalog-import.test.cjs tests/storefront.test.cjs tests/commerce.test.cjs",
+    "test:catalog-import:browser": "node tests/catalog-import-browser.cjs",
+    "test": "node --test tests/backend.test.cjs tests/email.test.cjs tests/commerce.test.cjs tests/features.test.cjs tests/local-demo.test.cjs tests/storefront.test.cjs tests/maintenance.test.cjs tests/paymongo.test.cjs tests/pos.test.cjs tests/catalog-import.test.cjs tests/local-seller-catalog.test.cjs",
+    "test:storefront": "node tests/storefront-browser.cjs",
+    "test:commerce": "node tests/commerce-browser.cjs",
+    "email:preview": "node scripts/preview-email.cjs",
+    "email:dns": "node --env-file-if-exists=.env scripts/check-email-dns.cjs",
+    "admin:create": "node --env-file-if-exists=.env backend/create-admin.cjs"
+  },
+  "dependencies": {
+    "nodemailer": "10.2.0"
+  }
+}

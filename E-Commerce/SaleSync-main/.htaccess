@@ -1,0 +1,7 @@
+# Defense in depth if this workspace is served through XAMPP/Apache.
+# The application itself runs with Node on port 3000. Apache must allow overrides.
+Options -Indexes
+<FilesMatch "(?i)(^\.|\.(cjs|sqlite(-shm|-wal)?|db|log|zip)$|^package(-lock)?\.json$)">
+    Require all denied
+</FilesMatch>
+RedirectMatch 403 "/(backend|data|tests|scripts|docs|node_modules|checkpoints|\.preview|\.git)(/|$)"

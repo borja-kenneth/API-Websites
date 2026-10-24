@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">SaleSync blue and cyan interlocking arrows</title>
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#2d5b9a"/><stop offset="1" stop-color="#244e88"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="0" y1="1" x2="1" y2="0">
+      <stop stop-color="#65b8c9"/><stop offset="1" stop-color="#73bdcd"/>
+    </linearGradient>
+    <linearGradient id="fold" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#163e6c"/><stop offset="1" stop-color="#244e88"/>
+    </linearGradient>
+  </defs>
+  <rect x="9" y="9" width="494" height="494" rx="112" fill="#fff" stroke="#dce5f2" stroke-width="7"/>
+  <g transform="translate(91 121) scale(1.06)">
+    <path d="M74 10H148L92 69C74 88 74 101 91 113L128 136L114 100H167L198 156H69C30 156 9 139 9 110C9 92 16 78 29 64Z" fill="url(#blue)"/>
+    <path d="M159 10H304V66H103Z" fill="url(#cyan)"/>
+    <path d="M114 100H240C280 100 305 122 305 155C305 173 298 188 284 203L240 247H168L222 190C240 171 239 158 221 146L182 121L198 156H149C127 143 110 121 114 100Z" fill="url(#blue)"/>
+    <path d="M114 100H165L198 156H149C127 143 110 121 114 100Z" fill="url(#fold)"/>
+    <path d="M10 190H211L158 247H10Z" fill="url(#cyan)"/>
+  </g>
+</svg>

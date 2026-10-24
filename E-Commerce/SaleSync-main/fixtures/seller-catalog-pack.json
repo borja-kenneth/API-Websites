@@ -1,0 +1,574 @@
+{
+  "manifestVersion": "1.0",
+  "purpose": "Sample seller and product fixtures for a controlled SaleSync academic demonstration",
+  "sourceNote": "Names/categories/prices and image URLs were adapted from an EARLIER supplied SaleSync-main.zip. The later current Windows project was not available for direct inspection; mapping must be validated against the current code.",
+  "safety": {
+    "regularDatabaseNeverAutoTargeted": true,
+    "explicitConfirmationRequired": true,
+    "idempotent": true,
+    "noRealSellerOrSalesClaim": true,
+    "noSecrets": true,
+    "doNotOverwriteExisting": true,
+    "noFakeCompletedOrders": true,
+    "doNotBypassSellerApproval": true
+  },
+  "stores": [
+    {
+      "seedKey": "sample-techhub",
+      "name": "TechHub PH — Demo",
+      "shortName": "TechHub PH",
+      "tagline": "Everyday technology for work, study, and play",
+      "description": "A fictional demonstration electronics store featuring connected devices and practical workstation essentials. Sample listings are for academic testing only.",
+      "headline": "Gear up your everyday",
+      "categoryFocus": [
+        "Electronics",
+        "Home & Living"
+      ],
+      "existingAsset": "assets/stores/techhub.svg",
+      "statusIntent": "approved-through-normal-management-workflow",
+      "demoOnly": true
+    },
+    {
+      "seedKey": "sample-stylehub",
+      "name": "StyleHub — Demo",
+      "shortName": "StyleHub",
+      "tagline": "Well-chosen pieces for everyday living",
+      "description": "A fictional demonstration lifestyle store for clothing, home essentials, wellness and accessories. Sample listings are for academic testing only.",
+      "headline": "Find your everyday favorites",
+      "categoryFocus": [
+        "Fashion",
+        "Home & Living",
+        "Beauty",
+        "Sports",
+        "Accessories"
+      ],
+      "existingAsset": "assets/stores/stylehub.svg",
+      "statusIntent": "approved-through-normal-management-workflow",
+      "demoOnly": true
+    }
+  ],
+  "products": [
+    {
+      "seedKey": "sample-p1",
+      "storeSeedKey": "sample-techhub",
+      "name": "Wireless Over-Ear Headphones",
+      "category": "Electronics",
+      "description": "Demo wireless headphone listing with adjustable fit and a choice of two finishes. Fictional product for educational demonstration; specifications and availability are illustrative.",
+      "baseSku": "DEMO-EC-P1",
+      "pricePHP": 4500,
+      "compareAtPHP": 5000,
+      "published": true,
+      "variantMode": "variant-level-stock",
+      "totalStockOnHand": 18,
+      "variants": [
+        {
+          "sku": "TH-HP-BLK",
+          "label": "Black / Black",
+          "optionValues": {
+            "Color": "Black",
+            "Size / Configuration": "Black"
+          },
+          "stockOnHand": 10
+        },
+        {
+          "sku": "TH-HP-CRM",
+          "label": "Cream / Cream",
+          "optionValues": {
+            "Color": "Cream",
+            "Size / Configuration": "Cream"
+          },
+          "stockOnHand": 8
+        }
+      ],
+      "specifications": {
+        "Category": "Over-ear headphones",
+        "Connection": "Wireless",
+        "Listing type": "Demonstration product"
+      },
+      "imageCandidateUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=82",
+      "existingLocalFallback": "assets/products/p1.svg",
+      "imageGuidance": "Verify the image depicts this exact product type and usage rights; otherwise use an approved matching local photo or a clearly labeled placeholder.",
+      "demoOnly": true
+    },
+    {
+      "seedKey": "sample-p2",
+      "storeSeedKey": "sample-techhub",
+      "name": "RGB Mechanical Keyboard",
+      "category": "Electronics",
+      "description": "Demo mechanical-style keyboard listing with selectable switch preferences. Fictional product for educational demonstration; specifications and availability are illustrative.",
+      "baseSku": "DEMO-EC-P2",
+      "pricePHP": 2200,
+      "compareAtPHP": 2200,
+      "published": true,
+      "variantMode": "variant-level-stock",
+      "totalStockOnHand": 15,
+      "variants": [
+        {
+          "sku": "TH-KB-BLU",
+          "label": "Blue switch / Black",
+          "optionValues": {
+            "Color": "Blue switch",
+            "Size / Configuration": "Black"
+          },
+          "stockOnHand": 8
+        },
+        {
+          "sku": "TH-KB-RED",
+          "label": "Red switch / Black",
+          "optionValues": {
+            "Color": "Red switch",
+            "Size / Configuration": "Black"
+          },
+          "stockOnHand": 7
+        }
+      ],
+      "specifications": {
+        "Category": "Keyboard",
+        "Lighting": "RGB",
+        "Listing type": "Demonstration product"
+      },
+      "imageCandidateUrl": "https://images.unsplash.com/photo-1541140532154-b024d705b90a?auto=format&fit=crop&w=900&q=82",
+      "existingLocalFallback": "assets/products/p2.svg",
+      "imageGuidance": "Verify the image depicts this exact product type and usage rights; otherwise use an approved matching local photo or a clearly labeled placeholder.",
+      "demoOnly": true
+    },
+    {
+      "seedKey": "sample-p3",
+      "storeSeedKey": "sample-techhub",
+      "name": "Everyday Smart Watch",
+      "category": "Electronics",
+      "description": "Demo smart-watch listing for testing color selection and order workflows. Fictional product for educational demonstration; specifications and availability are illustrative.",
+      "baseSku": "DEMO-EC-P3",
+      "pricePHP": 3100,
+      "compareAtPHP": 3500,
+      "published": true,
+      "variantMode": "variant-level-stock",
+      "totalStockOnHand": 7,
+      "variants": [
+        {
+          "sku": "TH-SW-BLK",
+          "label": "Black band / Standard",
+          "optionValues": {
+            "Color": "Black band",
+            "Size / Configuration": "Standard"
+          },
+          "stockOnHand": 4
+        },
+        {
+          "sku": "TH-SW-BGE",
+          "label": "Beige band / Standard",
+          "optionValues": {
+            "Color": "Beige band",
+            "Size / Configuration": "Standard"
+          },
+          "stockOnHand": 3
+        }
+      ],
+      "specifications": {
+        "Category": "Smartwatch",
+        "Band": "Replaceable-style",
+        "Listing type": "Demonstration product"
+      },
+      "imageCandidateUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=82",
+      "existingLocalFallback": "assets/products/p3.svg",
+      "imageGuidance": "Verify the image depicts this exact product type and usage rights; otherwise use an approved matching local photo or a clearly labeled placeholder.",
+      "demoOnly": true
+    },
+    {
+      "seedKey": "sample-p4",
+      "storeSeedKey": "sample-stylehub",
+      "name": "Minimalist Coffee Table",
+      "category": "Home & Living",
+      "description": "Demo compact coffee table in two illustrative finishes. Fictional product for educational demonstration; specifications and availability are illustrative.",
+      "baseSku": "DEMO-EC-P4",
+      "pricePHP": 1850,
+      "compareAtPHP": 1850,
+      "published": true,
+      "variantMode": "variant-level-stock",
+      "totalStockOnHand": 7,
+      "variants": [
+        {
+          "sku": "SH-CT-OAK",
+          "label": "Oak finish",
+          "optionValues": {
+            "Color": "Oak finish",
+            "Size / Configuration": "One size"
+          },
+          "stockOnHand": 4
+        },
+        {
+          "sku": "SH-CT-WAL",
+          "label": "Walnut finish",
+          "optionValues": {
+            "Color": "Walnut finish",
+            "Size / Configuration": "One size"
+          },
+          "stockOnHand": 3
+        }
+      ],
+      "specifications": {
+        "Category": "Living room furniture",
+        "Finish": "Oak or walnut",
+        "Listing type": "Demonstration product"
+      },
+      "imageCandidateUrl": "https://images.unsplash.com/photo-1499933374294-4584851497cc?auto=format&fit=crop&w=900&q=82",
+      "existingLocalFallback": "assets/products/p4.svg",
+      "imageGuidance": "Verify the image depicts this exact product type and usage rights; otherwise use an approved matching local photo or a clearly labeled placeholder.",
+      "demoOnly": true
+    },
+    {
+      "seedKey": "sample-p5",
+      "storeSeedKey": "sample-stylehub",
+      "name": "Classic White Canvas Sneakers",
+      "category": "Fashion",
+      "description": "Demo white canvas sneakers with common size variants. Fictional product for educational demonstration; specifications and availability are illustrative.",
+      "baseSku": "DEMO-EC-P5",
+      "pricePHP": 1500,
+      "compareAtPHP": 1500,
+      "published": true,
+      "variantMode": "variant-level-stock",
+      "totalStockOnHand": 16,
+      "variants": [
+        {
+          "sku": "SH-CS-WHT38",
+          "label": "White / Size 38",
+          "optionValues": {
+            "Color": "White",
+            "Size / Configuration": "Size 38"
+          },
+          "stockOnHand": 4
+        },
+        {
+          "sku": "SH-CS-WHT39",
+          "label": "White / Size 39",
+          "optionValues": {
+            "Color": "White",
+            "Size / Configuration": "Size 39"
+          },
+          "stockOnHand": 4
+        },
+        {
+          "sku": "SH-CS-WHT40",
+          "label": "White / Size 40",
+          "optionValues": {
+            "Color": "White",
+            "Size / Configuration": "Size 40"
+          },
+          "stockOnHand": 4
+        },
+        {
+          "sku": "SH-CS-WHT41",
+          "label": "White / Size 41",
+          "optionValues": {
+            "Color": "White",
+            "Size / Configuration": "Size 41"
+          },
+          "stockOnHand": 4
+        }
+      ],
+      "specifications": {
+        "Category": "Footwear",
+        "Color": "White",
+        "Listing type": "Demonstration product"
+      },
+      "imageCandidateUrl": "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&w=900&q=82",
+      "existingLocalFallback": "assets/products/p5.svg",
+      "imageGuidance": "Verify the image depicts this exact product type and usage rights; otherwise use an approved matching local photo or a clearly labeled placeholder.",
+      "demoOnly": true
+    },
+    {
+      "seedKey": "sample-p6",
+      "storeSeedKey": "sample-techhub",
+      "name": "Digital Camera Kit",
+      "category": "Electronics",
+      "description": "Demo camera listing with a single inventory-controlled configuration. Fictional product for educational demonstration; specifications and availability are illustrative.",
+      "baseSku": "DEMO-EC-P6",
+      "pricePHP": 35000,
+      "compareAtPHP": 38000,
+      "published": true,
+      "variantMode": "variant-level-stock",
+      "totalStockOnHand": 3,
+      "variants": [
+        {
+          "sku": "TH-DSLR-BLK",
+          "label": "Black / Standard",
+          "optionValues": {
+            "Color": "Black",
+            "Size / Configuration": "Standard"
+          },
+          "stockOnHand": 3
+        }
+      ],
+      "specifications": {
+        "Category": "Camera",
+        "Color": "Black",
+        "Listing type": "Demonstration product"
+      },
+      "imageCandidateUrl": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=900&q=82",
+      "existingLocalFallback": "assets/products/p6.svg",
+      "imageGuidance": "Verify the image depicts this exact product type and usage rights; otherwise use an approved matching local photo or a clearly labeled placeholder.",
+      "demoOnly": true
+    },
+    {
+      "seedKey": "sample-p7",
+      "storeSeedKey": "sample-stylehub",
+      "name": "Everyday Denim Jacket",
+      "category": "Fashion",
+      "description": "Demo blue denim jacket with selectable sizes. Fictional product for educational demonstration; specifications and availability are illustrative.",
+      "baseSku": "DEMO-EC-P7",
+      "pricePHP": 1299,
+      "compareAtPHP": 1599,
+      "published": true,
+      "variantMode": "variant-level-stock",
+      "totalStockOnHand": 10,
+      "variants": [
+        {
+          "sku": "SH-DJ-BLU-S",
+          "label": "Blue / Small",
+          "optionValues": {
+            "Color": "Blue",
+            "Size / Configuration": "Small"
+          },
+          "stockOnHand": 3
+        },
+        {
+          "sku": "SH-DJ-BLU-M",
+          "label": "Blue / Medium",
+          "optionValues": {
+            "Color": "Blue",
+            "Size / Configuration": "Medium"
+          },
+          "stockOnHand": 4
+        },
+        {
+          "sku": "SH-DJ-BLU-L",
+          "label": "Blue / Large",
+          "optionValues": {
+            "Color": "Blue",
+            "Size / Configuration": "Large"
+          },
+          "stockOnHand": 3
+        }
+      ],
+      "specifications": {
+        "Category": "Outerwear",
+        "Color": "Blue",
+        "Listing type": "Demonstration product"
+      },
+      "imageCandidateUrl": "https://images.unsplash.com/photo-1544022613-e87ca75a784a?auto=format&fit=crop&w=900&q=82",
+      "existingLocalFallback": "assets/products/p7.svg",
+      "imageGuidance": "Verify the image depicts this exact product type and usage rights; otherwise use an approved matching local photo or a clearly labeled placeholder.",
+      "demoOnly": true
+    },
+    {
+      "seedKey": "sample-p8",
+      "storeSeedKey": "sample-stylehub",
+      "name": "Hydrating Face Serum",
+      "category": "Beauty",
+      "description": "Demo face serum for verifying product categories and single-size purchases. No treatment claims are made. Fictional product for educational demonstration; specifications and availability are illustrative.",
+      "baseSku": "DEMO-EC-P8",
+      "pricePHP": 650,
+      "compareAtPHP": 800,
+      "published": true,
+      "variantMode": "variant-level-stock",
+      "totalStockOnHand": 8,
+      "variants": [
+        {
+          "sku": "SH-SERUM-30",
+          "label": "Standard / 30 mL",
+          "optionValues": {
+            "Color": "Standard",
+            "Size / Configuration": "30 mL"
+          },
+          "stockOnHand": 8
+        }
+      ],
+      "specifications": {
+        "Category": "Skincare",
+        "Volume": "30 mL",
+        "Listing type": "Demonstration product"
+      },
+      "imageCandidateUrl": "https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?auto=format&fit=crop&w=900&q=82",
+      "existingLocalFallback": "assets/products/p8.svg",
+      "imageGuidance": "Verify the image depicts this exact product type and usage rights; otherwise use an approved matching local photo or a clearly labeled placeholder.",
+      "demoOnly": true
+    },
+    {
+      "seedKey": "sample-p9",
+      "storeSeedKey": "sample-stylehub",
+      "name": "Exercise Yoga Mat",
+      "category": "Sports",
+      "description": "Demo yoga mat in two neutral colors. Fictional product for educational demonstration; specifications and availability are illustrative.",
+      "baseSku": "DEMO-EC-P9",
+      "pricePHP": 899,
+      "compareAtPHP": 899,
+      "published": true,
+      "variantMode": "variant-level-stock",
+      "totalStockOnHand": 10,
+      "variants": [
+        {
+          "sku": "SH-YM-CHAR",
+          "label": "Charcoal",
+          "optionValues": {
+            "Color": "Charcoal",
+            "Size / Configuration": "One size"
+          },
+          "stockOnHand": 5
+        },
+        {
+          "sku": "SH-YM-SAGE",
+          "label": "Sage",
+          "optionValues": {
+            "Color": "Sage",
+            "Size / Configuration": "One size"
+          },
+          "stockOnHand": 5
+        }
+      ],
+      "specifications": {
+        "Category": "Exercise mat",
+        "Color options": "Charcoal, Sage",
+        "Listing type": "Demonstration product"
+      },
+      "imageCandidateUrl": "https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?auto=format&fit=crop&w=900&q=82",
+      "existingLocalFallback": "assets/products/p9.svg",
+      "imageGuidance": "Verify the image depicts this exact product type and usage rights; otherwise use an approved matching local photo or a clearly labeled placeholder.",
+      "demoOnly": true
+    },
+    {
+      "seedKey": "sample-p10",
+      "storeSeedKey": "sample-stylehub",
+      "name": "Everyday Wallet",
+      "category": "Accessories",
+      "description": "Demo card-and-cash wallet in black or brown. Fictional product for educational demonstration; specifications and availability are illustrative.",
+      "baseSku": "DEMO-EC-P10",
+      "pricePHP": 799,
+      "compareAtPHP": 999,
+      "published": true,
+      "variantMode": "variant-level-stock",
+      "totalStockOnHand": 12,
+      "variants": [
+        {
+          "sku": "SH-WAL-BLK",
+          "label": "Black",
+          "optionValues": {
+            "Color": "Black",
+            "Size / Configuration": "One size"
+          },
+          "stockOnHand": 6
+        },
+        {
+          "sku": "SH-WAL-BRN",
+          "label": "Brown",
+          "optionValues": {
+            "Color": "Brown",
+            "Size / Configuration": "One size"
+          },
+          "stockOnHand": 6
+        }
+      ],
+      "specifications": {
+        "Category": "Wallet",
+        "Color options": "Black, Brown",
+        "Listing type": "Demonstration product"
+      },
+      "imageCandidateUrl": "https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=900&q=82",
+      "existingLocalFallback": "assets/products/p10.svg",
+      "imageGuidance": "Verify the image depicts this exact product type and usage rights; otherwise use an approved matching local photo or a clearly labeled placeholder.",
+      "demoOnly": true
+    },
+    {
+      "seedKey": "sample-p11",
+      "storeSeedKey": "sample-techhub",
+      "name": "Home Aroma Diffuser",
+      "category": "Home & Living",
+      "description": "Demo home diffuser listing used to test single-option inventory. Fictional product for educational demonstration; specifications and availability are illustrative.",
+      "baseSku": "DEMO-EC-P11",
+      "pricePHP": 1250,
+      "compareAtPHP": 1450,
+      "published": true,
+      "variantMode": "variant-level-stock",
+      "totalStockOnHand": 6,
+      "variants": [
+        {
+          "sku": "TH-AROMA-WHT",
+          "label": "White",
+          "optionValues": {
+            "Color": "White",
+            "Size / Configuration": "One size"
+          },
+          "stockOnHand": 6
+        }
+      ],
+      "specifications": {
+        "Category": "Home accessory",
+        "Color": "White",
+        "Listing type": "Demonstration product"
+      },
+      "imageCandidateUrl": "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=900&q=82",
+      "existingLocalFallback": "assets/products/p11.svg",
+      "imageGuidance": "Verify the image depicts this exact product type and usage rights; otherwise use an approved matching local photo or a clearly labeled placeholder.",
+      "demoOnly": true
+    },
+    {
+      "seedKey": "sample-p12",
+      "storeSeedKey": "sample-stylehub",
+      "name": "Lightweight Running Shoes",
+      "category": "Sports",
+      "description": "Demo athletic shoes with size-specific inventory. Fictional product for educational demonstration; specifications and availability are illustrative.",
+      "baseSku": "DEMO-EC-P12",
+      "pricePHP": 2800,
+      "compareAtPHP": 3200,
+      "published": true,
+      "variantMode": "variant-level-stock",
+      "totalStockOnHand": 12,
+      "variants": [
+        {
+          "sku": "SH-RS-GRY39",
+          "label": "Gray / Size 39",
+          "optionValues": {
+            "Color": "Gray",
+            "Size / Configuration": "Size 39"
+          },
+          "stockOnHand": 3
+        },
+        {
+          "sku": "SH-RS-GRY40",
+          "label": "Gray / Size 40",
+          "optionValues": {
+            "Color": "Gray",
+            "Size / Configuration": "Size 40"
+          },
+          "stockOnHand": 3
+        },
+        {
+          "sku": "SH-RS-GRY41",
+          "label": "Gray / Size 41",
+          "optionValues": {
+            "Color": "Gray",
+            "Size / Configuration": "Size 41"
+          },
+          "stockOnHand": 3
+        },
+        {
+          "sku": "SH-RS-GRY42",
+          "label": "Gray / Size 42",
+          "optionValues": {
+            "Color": "Gray",
+            "Size / Configuration": "Size 42"
+          },
+          "stockOnHand": 3
+        }
+      ],
+      "specifications": {
+        "Category": "Footwear",
+        "Color": "Gray",
+        "Listing type": "Demonstration product"
+      },
+      "imageCandidateUrl": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=82",
+      "existingLocalFallback": "assets/products/p12.svg",
+      "imageGuidance": "Verify the image depicts this exact product type and usage rights; otherwise use an approved matching local photo or a clearly labeled placeholder.",
+      "demoOnly": true
+    }
+  ]
+}

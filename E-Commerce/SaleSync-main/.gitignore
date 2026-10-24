@@ -1,0 +1,22 @@
+node_modules/
+.env
+.env.*
+!.env.example
+data/
+.preview/
+checkpoints/
+*.log
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+.app-secret
+*.pem
+*.key
+*.p12
+*.pfx
+.npmrc
+.DS_Store
+Thumbs.db
+# Ignore the old empty nested clone location.
+SaleSync/
