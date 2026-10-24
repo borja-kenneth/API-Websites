@@ -40,7 +40,7 @@ async function main(mode) {
   if (!fs.existsSync(envFile)) fs.copyFileSync(path.join(ROOT, '.env.example'), envFile, fs.constants.COPYFILE_EXCL);
   process.loadEnvFile(envFile);
   const origin = process.env.APP_ORIGIN || `http://127.0.0.1:${process.env.PORT || 3000}`;
-  console.log('Starting your regular SaleSync installation. Gmail needs your own local .env configuration.');
+  console.log('Starting SaleSync. Gmail is optional for starting the site, but account verification and password reset emails will not be sent until Gmail is configured in this computer’s local .env file.');
   const child = spawn(process.execPath, ['backend/start.cjs'], { cwd: ROOT, stdio: 'inherit', windowsHide: true });
   let ended = false;
   child.once('error', error => { ended = true; console.error(error.message); process.exitCode = 1; });
