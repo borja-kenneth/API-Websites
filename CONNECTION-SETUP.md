@@ -19,13 +19,13 @@ Edit `E-Commerce\SaleSync-main\.env` on the E-Commerce computer:
 
 ```env
 ONLINE_POS_ENABLED=true
-ONLINE_POS_URL=http://<POS-COMPUTER-IP>/POS%20System/api/storefront/index.php
+ONLINE_POS_URL=http://<POS-COMPUTER-IP>/API-Websites/POS-System/api/storefront/index.php
 ONLINE_POS_KEY=<same private key as POS System/api/storefront/config.local.php>
 ```
 
 The POS computer's IP is the address that E-Commerce must use. If both systems are on this same computer, `127.0.0.1` can be used. If they are on two computers, use the POS computer's current private Wi-Fi or Ethernet IP. Restart `Start-SaleSync.cmd` after changing `.env`.
 
-The shared key is stored in `POS System\api\storefront\config.local.php` and the E-Commerce `.env`. Keep it private. The POS API denies requests without the matching key. The online order tables are created automatically in the POS MySQL database on the first authenticated API request.
+The shared key is stored in `POS-System\api\storefront\config.local.php` and the E-Commerce `.env`. Keep it private. The POS API denies requests without the matching key. The online order tables are created automatically in the POS MySQL database on the first authenticated API request.
 
 ## Check the connection
 

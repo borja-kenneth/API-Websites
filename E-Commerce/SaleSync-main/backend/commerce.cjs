@@ -21,7 +21,12 @@ function commerceService({db,config,settings,now,audit,fail,pos:initialPos}){
   function move(productId,user,kind,delta,reservedDelta,reason,orderId=null){db.prepare('INSERT INTO inventory_movements VALUES (?,?,?,?,?,?,?,?,?)').run(randomUUID(),productId,orderId,user?.id||null,kind,delta,reservedDelta,reason,now());}
   const storeRow=id=>db.prepare('SELECT * FROM stores WHERE id=?').get(id);
   // Public catalog visibility is independent of staff access and historical records.
-  function publicStoreSql(alias='s'){const pos=`json_extract(${alias}.data,'$.source')='salesync_pos'`;return `${alias}.status='approved' AND (${pos}`+(config.catalogDemo?'':` OR (EXISTS (SELECT 1 FROM users catalog_owner WHERE catalog_owner.id=${alias}.owner_id AND catalog_owner.role='customer' AND catalog_owner.status='active' AND catalog_owner.verified_at IS NOT NULL) AND NOT EXISTS (SELECT 1 FROM audit demo_owner WHERE demo_owner.actor_id=${alias}.owner_id AND demo_owner.action IN ('LOCAL_DEMO_ACCOUNT_CREATED','LOCAL_CATALOG_FIXTURE_CREATED'))`)+`)`;}
+  function publicStoreSql(alias='s'){
+    const pos=`json_extract(${alias}.data,'$.source')='salesync_pos'`;
+    if(config.catalogDemo)return `${alias}.status='approved' AND (${pos})`;
+    const regular=`(EXISTS (SELECT 1 FROM users catalog_owner WHERE catalog_owner.id=${alias}.owner_id AND catalog_owner.role='customer' AND catalog_owner.status='active' AND catalog_owner.verified_at IS NOT NULL) AND NOT EXISTS (SELECT 1 FROM audit demo_owner WHERE demo_owner.actor_id=${alias}.owner_id AND demo_owner.action IN ('LOCAL_DEMO_ACCOUNT_CREATED','LOCAL_CATALOG_FIXTURE_CREATED')))`;
+    return `${alias}.status='approved' AND ((${pos}) OR ${regular})`;
+  }
   function storeIsPublic(id){return !!db.prepare('SELECT 1 FROM stores s WHERE s.id=? AND '+publicStoreSql()).get(id);}
   function storeView(row){return row&&{...JSON.parse(row.data),id:row.id,name:row.name,status:row.status,revision:row.revision,productCount:db.prepare("SELECT COUNT(*) n FROM products p JOIN product_meta m ON m.product_id=p.id WHERE m.store_id=? AND json_extract(p.data,'$.published')=1 AND NOT EXISTS(SELECT 1 FROM product_variants pv WHERE pv.variant_id=p.id)").get(row.id).n};}
   function publicStores(){return db.prepare('SELECT s.* FROM stores s WHERE '+publicStoreSql()+' ORDER BY s.name').all().map(storeView);}

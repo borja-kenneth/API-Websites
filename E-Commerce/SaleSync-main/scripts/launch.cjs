@@ -15,7 +15,9 @@ function prepareDependencies() {
   if (Number(process.versions.node.split('.')[0]) < 24) throw Error('Install Node.js 24 or later, then reopen the starter.');
   const fingerprint = createHash('sha256').update(fs.readFileSync(path.join(ROOT, 'package-lock.json'))).digest('hex');
   const stamp = path.join(ROOT, 'node_modules', '.salesync-lock');
-  if (fs.existsSync(stamp) && fs.readFileSync(stamp, 'utf8') === fingerprint && fs.existsSync(path.join(ROOT, 'node_modules/nodemailer/package.json'))) return;
+  let mailerAvailable = false;
+  try { require.resolve('nodemailer', { paths: [ROOT] }); mailerAvailable = true; } catch {}
+  if (fs.existsSync(stamp) && fs.readFileSync(stamp, 'utf8') === fingerprint && mailerAvailable) return;
   console.log('Installing the locked dependencies (internet is required on first start)...');
   const result = process.platform === 'win32'
     ? spawnSync(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', 'npm.cmd ci'], { cwd: ROOT, stdio: 'inherit', windowsHide: true })
