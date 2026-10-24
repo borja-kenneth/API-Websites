@@ -5,7 +5,9 @@ header('Cache-Control: no-store');
 
 $dbConfig = require dirname(__DIR__) . '/config.php';
 $localPath = __DIR__ . '/config.local.php';
-$apiKey = is_file($localPath) ? (string)((require $localPath)['api_key'] ?? '') : '';
+$localConfig = is_file($localPath) ? require $localPath : [];
+$apiKey = (string)($localConfig['api_key'] ?? '');
+$imageBasePath = (string)($localConfig['image_base_path'] ?? '');
 
 function out(array $data, int $status = 200): never {
     http_response_code($status);
@@ -27,12 +29,12 @@ function rows(PDO $p, string $sql, array $args=[]): array { $s=$p->prepare($sql)
 function row(PDO $p, string $sql, array $args=[]): ?array { return rows($p,$sql,$args)[0] ?? null; }
 function run(PDO $p, string $sql, array $args=[]): int { $s=$p->prepare($sql); $s->execute($args); return $s->rowCount(); }
 function bodyText(array $d,string $key,int $max): string { $v=trim((string)($d[$key]??'')); if ($v==='' || mb_strlen($v)>$max) bad('The order is missing valid customer details.'); return $v; }
-function imageUrl(string $path): ?string {
+function imageUrl(string $path, string $imageBasePath): ?string {
     if (!preg_match('#^uploads/products/([A-Za-z0-9._ -]+\.(?:jpg|jpeg|jfif|png|webp))$#iD',$path,$m)) return null;
     $host=(string)($_SERVER['HTTP_HOST']??''); if (!preg_match('/^[a-z0-9.:-]+$/iD',$host)) return null;
+    if (!preg_match('#^/[A-Za-z0-9/_-]+$#D',$imageBasePath)) return null;
     $https=!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off';
-    $root=dirname(dirname(dirname((string)($_SERVER['SCRIPT_NAME']??'/api/storefront/index.php'))));
-    return ($https?'https':'http').'://'.$host.rtrim($root,'/').'/uploads/products/'.rawurlencode($m[1]);
+    return ($https?'https':'http').'://'.$host.rtrim($imageBasePath,'/').'/uploads/products/'.rawurlencode($m[1]);
 }
 function ensureSchema(PDO $p): void {
     $p->exec("CREATE TABLE IF NOT EXISTS online_orders (
@@ -118,7 +120,7 @@ try{$p=db($dbConfig);ensureSchema($p);$route=trim((string)($_GET['route']??''),'
     if($method==='GET'&&$route==='catalog'){
         $products=rows($p,"SELECT pr.product_id,pr.product_name,pr.barcode,pr.image_path,pr.description,pr.category_id,c.category_name,pr.selling_price,i.quantity_on_hand,i.quantity_reserved FROM products pr JOIN categories c ON c.category_id=pr.category_id JOIN inventory i ON i.product_id=pr.product_id WHERE pr.is_active=TRUE ORDER BY pr.product_id");
         $settings=row($p,'SELECT store_name FROM system_settings WHERE settings_id=1');
-        out(['ok'=>true,'storeName'=>$settings['store_name']??'SaleSync','products'=>array_map(static fn($x)=>['productId'=>(int)$x['product_id'],'name'=>$x['product_name'],'sku'=>(string)($x['barcode']?:$x['product_id']),'category'=>$x['category_name'],'price'=>(float)$x['selling_price'],'stock'=>max(0,(int)$x['quantity_on_hand']-(int)$x['quantity_reserved']),'image'=>imageUrl((string)($x['image_path']??'')),'description'=>$x['description']??''], $products)]);
+        out(['ok'=>true,'storeName'=>$settings['store_name']??'SaleSync','products'=>array_map(static fn($x)=>['productId'=>(int)$x['product_id'],'name'=>$x['product_name'],'sku'=>(string)($x['barcode']?:$x['product_id']),'category'=>$x['category_name'],'price'=>(float)$x['selling_price'],'stock'=>max(0,(int)$x['quantity_on_hand']-(int)$x['quantity_reserved']),'image'=>imageUrl((string)($x['image_path']??''),$imageBasePath),'description'=>$x['description']??''], $products)]);
     }
     if($method==='POST'&&$route==='orders')out(reserve($p,input()),201);
     if($method==='POST'&&preg_match('~^orders/(EC-[A-F0-9-]{36})/(complete|cancel)$~D',$route,$m))out(updateOrder($p,$m[1],$m[2],input()));
