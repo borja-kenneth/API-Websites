@@ -493,7 +493,7 @@ canvas {
   width: 110px;
 }
 
-/* receipt modal — digital receipt */
+/* receipt modal â€” digital receipt */
 .pos-overlay {
   position: fixed;
   inset: 0;
@@ -517,7 +517,7 @@ canvas {
   width: 100%;
   padding: 1.3rem;
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: .8rem;
+  font-size: .92rem;
   color: var(--ink);
   max-height: 85vh;
   overflow-y: auto;
@@ -534,7 +534,7 @@ canvas {
 .pos-receipt .pr-sub {
   text-align: center;
   color: var(--sub);
-  font-size: .7rem;
+  font-size: .78rem;
   margin-bottom: .8rem;
 }
 
@@ -591,7 +591,7 @@ canvas {
   margin-top: .8rem;
 }
 
-/* ---------- Alerts, History, Paymongo — small additions ---------- */
+/* ---------- Alerts, History, Paymongo â€” small additions ---------- */
 .nav-badge {
   display: inline-block;
   background: #fff;
@@ -1774,3 +1774,63 @@ body.checkout-scan-mode .pos-products { overflow-y: auto; }
 .pos-line { display:flex; align-items:center; gap:.65rem; }
 .pos-line .pl-name { flex:1; min-width:0; }
 .pos-line .pl-image { width:42px; height:42px; flex:0 0 42px; object-fit:contain; border:1px solid var(--line); border-radius:7px; background:#fff; }
+
+
+/* Sales reporting date controls and cashier stock labels */
+.sales-date-range { display:flex; align-items:end; flex-wrap:wrap; gap:.65rem; margin:.8rem 0 1rem; }
+.sales-date-range label { display:grid; gap:.3rem; color:var(--sub); font-size:.78rem; font-weight:600; }
+.sales-date-range input { min-height:38px; padding:.45rem .6rem; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--ink); font:inherit; }
+.sales-date-range > span { padding-bottom:.55rem; color:var(--sub); }
+.pi-stock { margin-top:.25rem; color:var(--sub); font-size:.74rem; }
+
+.sales-filter-select { min-width: 92px; min-height: 40px; cursor: pointer; }
+#salesPayChips .sales-filter-select { min-width: 82px; }
+#salesRangeChips .sales-filter-select { min-width: 110px; }
+@media (max-width: 700px) { .sales-date-range { width: 100%; } .sales-date-range label { flex: 1 1 130px; } .sales-date-range input { width: 100%; } }
+
+/* Keep sales search, filters, date fields, and actions on one bottom edge. */
+.s-bar { align-items: flex-end; }
+.sales-date-range { align-items: flex-end; margin: 0; }
+.sales-date-range > span { padding-bottom: .62rem; }
+.sales-date-range input { box-sizing: border-box; height: 40px; }
+.sales-filter-select { box-sizing: border-box; height: 40px; }
+.s-search input { box-sizing: border-box; height: 48px; }
+.s-bar > button[onclick="exportSalesCsv()"] { margin-left: auto; }
+
+/* Analytics range presets stay grouped while Export CSV sits at the row's far right. */
+
+/* Analytics only: keep period buttons together and export at the far right. */
+.an-range-actions { flex: 1 1 auto; justify-content: space-between; }
+@media (max-width: 900px) { .an-range-actions { width: 100%; } }
+
+/* Keep report actions together and reserve the flexible header row only for Analytics. */
+.page-head { width: 100%; box-sizing: border-box; }
+.page-head > .s-right:not(.an-range-actions) { flex: 0 0 auto; justify-content: flex-start; }
+.an-range-actions { min-width: 0; }
+.an-range-actions > .s-seg { flex: 0 0 auto; }
+.an-range-actions > .s-btn { flex: 0 0 auto; margin-left: auto; }
+@media (max-width: 900px) { .page-head > .s-right:not(.an-range-actions) { width: auto; } .an-range-actions { flex: 1 1 100%; } }
+
+/* Prevent admin content from exceeding the space beside the sidebar. */
+body.role-admin main#main { width: auto; min-width: 0; box-sizing: border-box; }
+body.role-admin .app-body { min-width: 0; }
+.page-head > div:first-child { min-width: 0; }
+.an-range-actions { flex: 1 1 auto; }
+
+/* Keep Analytics period choices immediately beside Export CSV at the right edge. */
+.an-range-actions { flex: 0 0 auto; justify-content: flex-start; }
+.an-range-actions > .s-btn { margin-left: 0; }
+@media (max-width: 900px) { .an-range-actions { flex: 1 1 100%; justify-content: flex-start; } }
+
+.an-range-actions { flex-wrap: wrap; gap: .55rem; justify-content: flex-end; }
+.an-period-select { min-width: 112px; height: 40px; }
+.an-date-range { display: flex; align-items: flex-end; flex-wrap: wrap; gap: .4rem; }
+.an-date-range label { display: grid; gap: .22rem; color: var(--sub); font-size: .72rem; font-weight: 650; }
+.an-date-range input { box-sizing: border-box; width: 138px; height: 40px; padding: .4rem .5rem; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); font: inherit; font-size: .78rem; }
+.an-date-range > span { padding-bottom: .58rem; color: var(--sub); }
+@media (max-width: 1100px) { .an-range-actions { flex: 1 1 100%; justify-content: flex-start; } }
+@media (max-width: 600px) { .an-date-range { width: 100%; } .an-date-range label { flex: 1 1 130px; } .an-date-range input { width: 100%; } }
+
+/* Align Analytics controls to the bottom edge of the labeled date inputs. */
+.an-range-actions { align-items: flex-end; }
+.an-period-select, .an-range-actions > .s-btn { align-self: flex-end; }

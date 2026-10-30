@@ -256,6 +256,8 @@ let barcodeCanvas = null;
 let barcodePrintProduct = null;
 let barcodePrintType = 'CODE39';
 let cashierReceiptQuery = '';
+let cashierReturnQuery = '';
+let returnReturnTo = 'history';
 
 // Code 39 encoding is used for SaleSync-generated labels. The renderer and the
 // fallback camera decoder share this table, so camera scanning also works in
@@ -1033,6 +1035,7 @@ function posItemsHTML(list) {
       ${p.image ? `<img class="pi-image" src="${escapeHtml(p.image)}" alt="" loading="lazy">` : ''}
       <div class="pi-name">${escapeHtml(p.name)}</div>
       <div class="pi-cat">${escapeHtml(p.cat)}</div>
+      <div class="pi-stock">Stock: ${Number(p.stock || 0)}</div>
       <div class="pi-price">${money(p.price)}</div>
     </button>`;
   }).join('');
@@ -1236,12 +1239,6 @@ function receiptText(tx) {
 }
 function showReceipt(tx, readonly) {
   document.getElementById('posReceiptBody').innerHTML = receiptHTML(tx) + `
-    <div class="pos-receipt-actions">
-      <button class="btn" onclick="downloadReceipt(${tx.id})">Download</button>
-      <button class="btn" style="background:var(--accent2)" onclick="toggleEmailRow(${tx.id})">Email</button>
-    </div>
-    <div class="pos-email-row" id="emailRow-${tx.id}"><input type="email" id="emailInput-${tx.id}" placeholder="name@email.com"><button class="btn" onclick="sendEmailReceipt(${tx.id})">Send</button></div>
-    <div class="pos-sent" id="sentMsg-${tx.id}">Digital receipt delivery is not configured yet. Use the field below to record a delivery request.</div>
     <button class="btn primary-full" onclick="closeReceipt()">${readonly ? 'Close' : 'New sale'}</button>`;
   document.getElementById('posOverlay').classList.add('show');
 }
@@ -1276,20 +1273,30 @@ async function downloadReceipt(id) {
 function closeReceipt() { document.getElementById('posOverlay').classList.remove('show'); }
 
 // ---------- Sales page helpers (admin) ----------
-const salesState = { tab: 'history', pay: 'all', range: 7, category: 'all', page: 1, q: '', open: new Set(), opened: false };
+const salesState = { tab: 'history', pay: 'all', range: 'weekly', from: '', to: '', category: 'all', page: 1, q: '', open: new Set(), opened: false };
 const SALES_PER_PAGE = 10;
 function localISO(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-function salesCutoff() { if (!salesState.range) return null; const d = new Date(); d.setDate(d.getDate() - (salesState.range - 1)); return localISO(d); }
+function salesDateBounds() {
+  const end = new Date(); end.setHours(0, 0, 0, 0);
+  if (salesState.range === 'custom') return { from: salesState.from, to: salesState.to };
+  const start = new Date(end);
+  if (salesState.range === 'weekly') start.setDate(start.getDate() - 6);
+  else if (salesState.range === 'monthly') start.setDate(1);
+  else if (salesState.range === 'yearly') start.setMonth(0, 1);
+  return { from: localISO(start), to: localISO(end) };
+}
+function salesCutoff() { return salesDateBounds().from || null; }
+function salesEndDate() { return salesDateBounds().to || null; }
 function payClass(m) { return m === 'paymongo' ? 'online' : m; }
 function payShort(m) { return m === 'paymongo' ? 'ONLINE' : String(m).toUpperCase(); }
 function filteredTx() {
-  const cut = salesCutoff(), q = salesState.q;
-  return transactions.filter(t => (!cut || localISO(t.time) >= cut) && (salesState.pay === 'all' || t.payMethod === salesState.pay)
+  const cut = salesCutoff(), end = salesEndDate(), q = salesState.q;
+  return transactions.filter(t => (!cut || localISO(t.time) >= cut) && (!end || localISO(t.time) <= end) && (salesState.pay === 'all' || t.payMethod === salesState.pay)
     && (!q || ((t.receiptNumber || '') + ' ' + (t.cashierName || '') + ' ' + (t.cashierUsername || '') + ' ' + t.lines.map(l => l.name).join(' ')).toLowerCase().includes(q)));
 }
 function filteredEntries() {
-  const cut = salesCutoff(), q = salesState.q;
-  return sales.filter(s => (!cut || s.date >= cut) && (salesState.pay === 'all' || (s.payMethod || 'cash') === salesState.pay)
+  const cut = salesCutoff(), end = salesEndDate(), q = salesState.q;
+  return sales.filter(s => (!cut || s.date >= cut) && (!end || s.date <= end) && (salesState.pay === 'all' || (s.payMethod || 'cash') === salesState.pay)
     && (salesState.category === 'all' || s.cat === salesState.category)
     && (!q || ((s.receiptNumber || '') + ' ' + s.name + ' ' + s.cat).toLowerCase().includes(q)));
 }
@@ -1299,8 +1306,9 @@ function salesCategoryHTML() {
   return `<select class="i-select sales-category-select" aria-label="Filter Daily Sales by category" onchange="setSalesCategory(this.value)"><option value="all" ${active === 'all' ? 'selected' : ''}>All categories</option>${available.map(c => `<option value="${escapeHtml(c)}" ${active === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}</select>`;
 }
 function salesChipsHTML() {
-  const pay = [['all', 'All'], ['cash', 'Cash'], ['card', 'Card'], ['paymongo', 'Online']].map(([v, l]) => `<button class="s-chip ${salesState.pay === v ? 'on' : ''}" onclick="setSalesPay('${v}')">${l}</button>`).join('');
-  const rng = [[1, 'Today'], [7, '7 days'], [30, '30 days'], [0, 'All']].map(([v, l]) => `<button class="s-chip ${salesState.range === v ? 'on' : ''}" onclick="setSalesRange(${v})">${l}</button>`).join('');
+  const pay = `<select class="i-select sales-filter-select" aria-label="Filter by payment method" onchange="setSalesPay(this.value)">${[['all', 'All'], ['cash', 'Cash'], ['card', 'Card'], ['paymongo', 'Online']].map(([v, l]) => `<option value="${v}" ${salesState.pay === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+  const selectedRange = ['daily', 'weekly', 'monthly', 'yearly'].includes(salesState.range) ? salesState.range : 'weekly';
+  const rng = `<select class="i-select sales-filter-select" aria-label="Filter by sales period" onchange="setSalesRange(this.value)">${[['daily', 'Daily'], ['weekly', 'Weekly'], ['monthly', 'Monthly'], ['yearly', 'Yearly']].map(([v, l]) => `<option value="${v}" ${selectedRange === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
   return { pay, rng };
 }
 function salesKpisHTML() {
@@ -1333,7 +1341,7 @@ function salesBodyHTML() {
         <td>${first}${more > 0 ? ` <span class="s-more">+${more} more</span>` : ''}</td>
         <td><span class="s-pay p-${payClass(t.payMethod)}">${payShort(t.payMethod)}</span></td><td>${t.voucher || '—'}</td>
         <td class="num"><strong>${money(t.total)}</strong>${t.returnedAmount > 0 ? `<small class="return-summary">Returns: ${money(t.returnedAmount)}</small>` : ''}</td>
-        <td class="action-cell"><div class="sales-row-actions"><button class="s-btn" onclick='showReceipt(transactions.find(x=>x.id===${t.id}), true)'>${dIcon('eye')}Receipt</button><button class="s-btn ${t.canReturn ? '' : 'disabled'}" ${t.canReturn ? '' : 'disabled'} onclick="openReturnModal(${t.id})">${t.canReturn ? 'Return / refund' : 'Returned'}</button></div></td></tr>`; }).join('')}
+        <td class="action-cell"><div class="sales-row-actions"><button class="s-btn" onclick='showReceipt(transactions.find(x=>x.id===${t.id}), true)'>${dIcon('eye')}Receipt</button>${currentUser?.role_name === 'CASHIER' ? '' : `<button class="s-btn ${t.canReturn ? '' : 'disabled'}" ${t.canReturn ? '' : 'disabled'} onclick="openReturnModal(${t.id})">${t.canReturn ? 'Return / refund' : 'Returned'}</button>`}</div></td></tr>`; }).join('')}
       </tbody></table></div>
       <div class="s-pager"><span>Showing ${(salesState.page - 1) * SALES_PER_PAGE + 1}–${Math.min(salesState.page * SALES_PER_PAGE, f.length)} of ${f.length}</span>
       <div class="s-pg"><button onclick="setSalesPage(${salesState.page - 1})" ${salesState.page <= 1 ? 'disabled' : ''}>Previous</button><span>Page ${salesState.page} of ${pages}</span><button onclick="setSalesPage(${salesState.page + 1})" ${salesState.page >= pages ? 'disabled' : ''}>Next</button></div></div></div>`;
@@ -1361,10 +1369,20 @@ function refreshSales() {
   const c = salesChipsHTML();
   const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
   set('salesPayChips', c.pay); set('salesRangeChips', c.rng); set('salesCategoryFilter', salesState.tab === 'history' ? '' : salesCategoryHTML()); set('salesKpis', salesKpisHTML()); set('salesBody', salesBodyHTML());
+  const dates = salesDateBounds();
+  const from = document.getElementById('salesDateFrom'), to = document.getElementById('salesDateTo');
+  if (from) from.value = dates.from || '';
+  if (to) to.value = dates.to || '';
 }
 function setSalesPay(v) { salesState.pay = v; salesState.page = 1; refreshSales(); }
 function setSalesCategory(v) { const available = new Set([...CATS, ...sales.map(row => row.cat).filter(Boolean)]); salesState.category = v === 'all' || available.has(v) ? v : 'all'; salesState.page = 1; refreshSales(); }
-function setSalesRange(v) { salesState.range = v; salesState.page = 1; refreshSales(); }
+function setSalesRange(v) { if (!['daily','weekly','monthly','yearly'].includes(v)) return; salesState.range = v; salesState.from = ''; salesState.to = ''; salesState.page = 1; refreshSales(); }
+function applySalesDateRange() {
+  const from = document.getElementById('salesDateFrom')?.value || '', to = document.getElementById('salesDateTo')?.value || '';
+  if (!from || !to) return showPopup('Choose both a start date and an end date.', { title: 'Date range required', type: 'warning' });
+  if (from > to) return showPopup('The start date must be on or before the end date.', { title: 'Check the dates', type: 'warning' });
+  salesState.range = 'custom'; salesState.from = from; salesState.to = to; salesState.page = 1; refreshSales();
+}
 function setSalesQ(v) { salesState.q = v.trim().toLowerCase(); salesState.page = 1; refreshSales(); }
 function setSalesPage(n) { salesState.page = n; refreshSales(); }
 function toggleSalesDay(date) { salesState.open.has(date) ? salesState.open.delete(date) : salesState.open.add(date); refreshSales(); }
@@ -1379,8 +1397,9 @@ function salesPage(active) {
   <div class="s-bar">
     <div class="s-search">${dIcon('magnifying%20glass')}<input id="salesSearch" type="search" placeholder="Search receipt or product" value="${salesState.q}" oninput="setSalesQ(this.value)"></div>
     ${isTx ? '' : `<div id="salesCategoryFilter">${salesCategoryHTML()}</div>`}
-    <div class="s-chips" id="salesPayChips">${c.pay}</div><div class="s-spacer"></div>
-    <div class="s-chips" id="salesRangeChips">${c.rng}</div>
+    <div id="salesPayChips">${c.pay}</div>
+    <div id="salesRangeChips">${c.rng}</div>
+    <div class="sales-date-range"><label>From<input id="salesDateFrom" type="date" value="${salesDateBounds().from}"></label><span>to</span><label>To<input id="salesDateTo" type="date" value="${salesDateBounds().to}"></label><button class="s-btn" type="button" onclick="applySalesDateRange()">Apply dates</button></div>
     <button class="s-btn" onclick="exportSalesCsv()">${dIcon('download')}Export CSV</button>
   </div>
   <div id="salesBody">${salesBodyHTML()}</div>`;
@@ -1525,11 +1544,31 @@ async function exportInvCsv() {
 
 // ---------- Analytics helpers (admin) ----------
 const anState = { met: 'both', cmp: true, tps: 'rev' };
+const anRangeState = { period: 'weekly', from: '', to: '' };
 let anCache = null;
 const AN_COLORS = ['#265194', '#6AB3CD', '#D9A63A', '#3FA382', '#7B68C8', '#D0687A'];
 const AN_PAY = { cash: ['Cash', '#6AB3CD'], card: ['Card', '#265194'], online: ['Online', '#D9A63A'] };
 function anColor(cat) { return AN_COLORS[Math.max(CATS.indexOf(cat), 0) % AN_COLORS.length]; }
 function anDateStr(daysAgo) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - daysAgo); return localISO(d); }
+function anRangeBounds() {
+  const end = new Date(); end.setHours(0, 0, 0, 0);
+  if (anRangeState.period === 'custom' && anRangeState.from && anRangeState.to) return { from: anRangeState.from, to: anRangeState.to };
+  const start = new Date(end);
+  if (anRangeState.period === 'weekly') start.setDate(start.getDate() - 6);
+  else if (anRangeState.period === 'monthly') start.setDate(1);
+  else if (anRangeState.period === 'yearly') start.setMonth(0, 1);
+  return { from: localISO(start), to: localISO(end) };
+}
+function setAnPeriod(value) {
+  if (!['daily', 'weekly', 'monthly', 'yearly'].includes(value)) return;
+  anRangeState.period = value; anRangeState.from = ''; anRangeState.to = ''; render('analytics');
+}
+function applyAnDateRange() {
+  const from = document.getElementById('anDateFrom')?.value || '', to = document.getElementById('anDateTo')?.value || '';
+  if (!from || !to) return showPopup('Choose both a start date and an end date.', { title: 'Date range required', type: 'warning' });
+  if (from > to) return showPopup('The start date must be on or before the end date.', { title: 'Check the dates', type: 'warning' });
+  anRangeState.period = 'custom'; anRangeState.from = from; anRangeState.to = to; render('analytics');
+}
 function anShort(v) { return v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'k' : String(Math.round(v)); }
 function anHour(h) { return (h % 12 || 12) + (h < 12 ? ' AM' : ' PM'); }
 function anLabel(dateStr) { return formatDateOnly(new Date(dateStr + 'T00:00:00')); }
@@ -1539,9 +1578,10 @@ function anTrend(cur, prev) {
   return `<span class="a-tr ${p >= 0 ? 'up' : 'down'}">${p >= 0 ? '▲' : '▼'} ${Math.abs(p).toFixed(1)}%</span>`;
 }
 function anData() {
-  const N = analyticsRangeDays;
-  const curDates = [...Array(N)].map((_, i) => anDateStr(N - 1 - i));
-  const prevDates = [...Array(N)].map((_, i) => anDateStr(2 * N - 1 - i));
+  const bounds = anRangeBounds(), start = new Date(bounds.from + 'T00:00:00'), end = new Date(bounds.to + 'T00:00:00');
+  const N = Math.max(1, Math.round((end - start) / 86400000) + 1);
+  const curDates = [...Array(N)].map((_, i) => { const d = new Date(start); d.setDate(d.getDate() + i); return localISO(d); });
+  const prevDates = [...Array(N)].map((_, i) => { const d = new Date(start); d.setDate(d.getDate() - N + i); return localISO(d); });
   const idx = {}, pidx = {};
   curDates.forEach((d, i) => { idx[d] = i; }); prevDates.forEach((d, i) => { pidx[d] = i; });
   const txInfo = {}; transactions.forEach(t => { txInfo[t.id] = t; });
@@ -1647,9 +1687,12 @@ function setAnTop(v) { anState.tps = v; const set = (id, h) => { const el = docu
 function analyticsPage() {
   const a = anData(); anCache = { a };
   const N = a.N;
+  const bounds = anRangeBounds();
+  const period = ['daily', 'weekly', 'monthly', 'yearly'].includes(anRangeState.period) ? anRangeState.period : 'weekly';
   return `
   <div class="page-head"><div><div class="eyebrow">INSIGHTS</div><h1>Analytics</h1><p>Understand sales performance, product demand, and category trends.</p></div>
-    <div class="s-right"><div class="s-seg">${[7, 14, 30, 60].map(n => `<button class="${n === N ? 'on' : ''}" onclick="setAnalyticsRange(${n})">${n} days</button>`).join('')}</div>
+    <div class="s-right an-range-actions"><select class="i-select an-period-select" aria-label="Analytics date period" onchange="setAnPeriod(this.value)">${[['daily', 'Daily'], ['weekly', 'Weekly'], ['monthly', 'Monthly'], ['yearly', 'Yearly']].map(([v, l]) => `<option value="${v}" ${period === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    <div class="an-date-range"><label>From<input id="anDateFrom" type="date" value="${bounds.from}"></label><span>to</span><label>To<input id="anDateTo" type="date" value="${bounds.to}"></label><button class="s-btn" type="button" onclick="applyAnDateRange()">Apply</button></div>
     <button class="s-btn" onclick="exportAnalyticsCsv()">${dIcon('download')}Export CSV</button></div></div>
   <div class="sec grid g4">${anKpisHTML(a)}</div>
   <div class="a-ins">${anInsightsHTML(a)}</div>
@@ -1951,7 +1994,7 @@ function cashierTransactionRowsHTML() {
     <td>${(t.lines || []).map(l => l.qty + '× ' + escapeHtml(l.name)).join(', ')}</td>
     <td><span class="tag ${escapeHtml(t.payMethod)}">${payLabel(t.payMethod)}</span></td><td>${escapeHtml(t.voucher || '—')}</td>
     <td class="num"><strong>${money(t.total)}</strong>${t.returnedAmount > 0 ? `<small class="return-summary">Returns: ${money(t.returnedAmount)}</small>` : ''}</td>
-    <td class="action-cell"><div class="sales-row-actions cashier-row-actions"><button class="btn secondary" onclick='showReceipt(transactions.find(x=>x.id===${t.id}), true)'>View receipt</button><button class="btn" ${t.canReturn ? '' : 'disabled'} onclick="openReturnModal(${t.id})">${t.canReturn ? 'Return / refund' : 'Returned'}</button></div></td>
+    <td class="action-cell"><div class="sales-row-actions cashier-row-actions"><button class="btn secondary" onclick='showReceipt(transactions.find(x=>x.id===${t.id}), true)'>View receipt</button></div></td>
   </tr>`).join('');
 }
 function setCashierReceiptQuery(value) {
@@ -1966,6 +2009,24 @@ function setCashierReceiptQuery(value) {
   }
   const input = document.getElementById('cashierReceiptSearch');
   if (input && input.value !== cashierReceiptQuery) input.value = cashierReceiptQuery;
+}
+function cashierReturnRowsHTML() {
+  const q = cashierReturnQuery.trim().toLowerCase();
+  const list = transactions.filter(t => (t.canReturn || t.returnedAmount > 0)
+    && (!q || `${t.receiptNumber || ''} ${t.id} ${t.customerName || ''} ${t.cashierName || ''} ${(t.lines || []).map(l => l.name).join(' ')}`.toLowerCase().includes(q)));
+  if (!list.length) return `<tr><td colspan="6" class="empty-state">No returnable receipts matched. Search by receipt number or product.</td></tr>`;
+  return list.map(t => `<tr>
+    <td><strong>${escapeHtml(t.receiptNumber || '#' + t.id)}</strong></td><td>${formatDateTime(t.time)}</td>
+    <td>${(t.lines || []).map(l => `${l.qty}× ${escapeHtml(l.name)}`).join(', ')}</td>
+    <td class="num">${money(t.returnedAmount || 0)}</td>
+    <td><span class="tag ${t.canReturn ? 'ok' : 'out'}">${t.canReturn ? (t.returnedAmount > 0 ? 'Partially returned' : 'Eligible') : 'Return closed'}</span></td>
+    <td class="action-cell"><button class="btn" ${t.canReturn ? '' : 'disabled'} onclick="openReturnModal(${t.id})">${t.canReturn ? 'Handle return' : 'Closed'}</button></td>
+  </tr>`).join('');
+}
+function setCashierReturnQuery(value) {
+  cashierReturnQuery = String(value || '');
+  const body = document.getElementById('cashierReturnRows');
+  if (body) body.innerHTML = cashierReturnRowsHTML();
 }
 
 // ---------- Views ----------
@@ -2074,6 +2135,16 @@ const views = {
       <div class="section-head table-head"><div><h2>Transactions</h2><span class="section-meta" id="cashierReceiptResultCount">${transactions.length} receipts loaded</span></div></div>
       <div class="tw"><table class="cashier-transactions-table"><thead><tr><th>Receipt #</th><th>Time</th><th>Cashier</th><th>Items</th><th>Payment</th><th>Voucher</th><th class="num r">Total</th><th>Actions</th></tr></thead><tbody id="cashierTransactionRows">${cashierTransactionRowsHTML()}</tbody></table></div>
     </div>`;
+  },
+  returns() {
+    const eligible = transactions.filter(t => t.canReturn).length;
+    const completed = transactions.filter(t => !t.canReturn && t.returnedAmount > 0).length;
+    return `${salesSubnav('returns')}
+      <div class="page-head"><div><div class="eyebrow">CASHIER</div><h1>Returns &amp; refunds</h1><p>Find a completed receipt, select items, and record the refund.</p></div></div>
+      <div class="sec grid g2"><div class="card d-kpi"><div><div class="l">Receipts eligible for return</div><div class="v num">${eligible}</div></div><div class="d-kic t-sky">${dIcon('receipt')}</div></div><div class="card d-kpi"><div><div class="l">Fully returned receipts</div><div class="v num">${completed}</div></div><div class="d-kic t-amber">${dIcon('arrow')}</div></div></div>
+      <div class="card"><div class="toolbar table-toolbar"><div><h2>Find receipt items to return</h2><span class="section-meta">${transactions.filter(t => t.canReturn || t.returnedAmount > 0).length} receipts with remaining returnable items or return activity</span></div><div class="search-wrap compact-search"><span class="search-icon">⌕</span><input type="search" placeholder="Receipt number, cashier, or product" aria-label="Search returns and refunds" value="${escapeHtml(cashierReturnQuery)}" oninput="setCashierReturnQuery(this.value)"></div></div>
+        <div class="tw"><table class="cashier-transactions-table"><thead><tr><th>Receipt #</th><th>Date</th><th>Purchased items</th><th>Refunded</th><th>Status</th><th>Action</th></tr></thead><tbody id="cashierReturnRows">${cashierReturnRowsHTML()}</tbody></table></div>
+      </div>`;
   },
   analytics() {
     return analyticsPage();
@@ -2549,6 +2620,7 @@ function closeReturnModal() {
 }
 async function openReturnModal(transactionId) {
   if (!['ADMIN','CASHIER'].includes(currentUser?.role_name)) return;
+  returnReturnTo = location.hash.replace(/^#/, '') === 'returns' ? 'returns' : 'history';
   returnState = { transactionId: Number(transactionId), data: null };
   const modal = document.getElementById('returnModal');
   const items = document.getElementById('returnItems');
@@ -2626,7 +2698,7 @@ async function submitReturn() {
     const result = response.return;
     closeReturnModal();
     await loadData();
-    render('history');
+    render(returnReturnTo);
     const statusNote = result.refundStatus === 'PENDING_PROVIDER' ? '\n\nThe refund is recorded as pending. It has not been sent to the card/online provider automatically.' : '';
     showPopup(`Return number: ${result.returnNumber}\nRefund amount: ${money(result.refundAmount)}${statusNote}`, { title: 'Return / refund recorded', type: 'success', okText: 'Done' });
   } catch (err) {
@@ -2678,12 +2750,12 @@ const navDefsCashier = [
   ["checkout", "Checkout", "checkout"],
   ["history", "Sales", "sales"]
 ];
-const navGroup = { dashboard: "dashboard", checkout: "checkout", history: "sales", ledger: "sales", inventory: "inventory", products: "inventory", analytics: "analytics", reports: "reports", settings: "settings" };
+const navGroup = { dashboard: "dashboard", checkout: "checkout", history: "sales", returns: "sales", ledger: "sales", inventory: "inventory", products: "inventory", analytics: "analytics", reports: "reports", settings: "settings" };
 
 function visibleViewsForRole() {
   return currentUser?.role_name === 'ADMIN'
     ? ['dashboard', 'history', 'inventory', 'products', 'ledger', 'analytics', 'reports', 'settings']
-    : ['checkout', 'history'];
+    : ['checkout', 'history', 'returns'];
 }
 
 function inventorySubnav(active) {
@@ -2692,7 +2764,8 @@ function inventorySubnav(active) {
 
 function salesSubnav(active) {
   const ledger = currentUser?.role_name === 'ADMIN' ? `<button class="${active === 'ledger' ? 'on' : ''}" onclick="render('ledger')">Daily sales</button>` : '';
-  return `<div class="subnav"><span class="subnav-label">Sales</span><button class="${active === 'history' ? 'on' : ''}" onclick="render('history')">Transactions</button>${ledger}</div>`;
+  const returns = currentUser?.role_name === 'CASHIER' ? `<button class="${active === 'returns' ? 'on' : ''}" onclick="render('returns')">Returns / refunds</button>` : '';
+  return `<div class="subnav"><span class="subnav-label">Sales</span><button class="${active === 'history' ? 'on' : ''}" onclick="render('history')">Transactions</button>${ledger}${returns}</div>`;
 }
 
 function updateUserHeader() {
